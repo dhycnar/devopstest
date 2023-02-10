@@ -1,0 +1,564 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_rel_widget_clone">
+    <sp_rel_widget_clone action="INSERT_OR_UPDATE">
+        <child display_value="Copy of Surveys and Assessments">36705d6f2fbc691076befe7cf699b680</child>
+        <cloned>2023-02-09 21:42:50</cloned>
+        <last_validated>2023-02-09 21:42:50</last_validated>
+        <parent display_value="Surveys and Assessments">5cbb8f1053313010561cddeeff7b1272</parent>
+        <payload>&lt;?xml version="1.0" encoding="UTF-8"?&gt;&lt;sp_widget&gt;&lt;category&gt;custom&lt;/category&gt;&lt;client_script&gt;&lt;![CDATA[function($scope, $window, $sce, $document, $timeout, cabrillo, spAriaUtil) {
+	var c = this;
+	if (c.data.isRedirect)
+		return;
+	c.isNative = cabrillo.isNative();
+	c.title = $document[0].title;
+	var assessData = c.data.assessment;
+	var iframePayload = {
+		name : assessData.title || c.data.invalidRecordMsg,
+		method : assessData.evaluation_method
+	}
+
+	c.showIntro = true;
+		$scope.$on('assessment.form.submitted', function(data, result) {
+			if (!result.response || result.response.data.success === false || result.response.data.success === 'false') {
+				c.errorMessage = assessData.parameterizedMsgsMap.form_submit_failed_msg;
+				c.invalidSurvey = true;
+				removeCabrilloButtons();
+				return;
+			}
+			var actionName = result.action_name;
+			if (actionName == 'save' || actionName == 'submit') {
+				$scope.server.get({
+					action: 'log_assessment',
+					assessmentDetails: {type : c.data.assessment.evaluation_method_display, action_name : actionName , table : c.data.assessment.table , id : c.data.assessment.instance_id , name : c.data.assessment.display}
+				});
+			}
+			var conclusion = assessData.parameterizedMsgsMap.submitted_msg;
+			assessData.conclusion = (assessData.conclusion &amp;&amp; assessData.conclusion.length &gt; 0) ? assessData.conclusion : conclusion;
+			switch(actionName) {
+				case 'submit':
+					if (c.data.refreshInterval &amp;&amp; c.data.refreshInterval &gt; 0) {
+						c.data.successMessage = assessData.conclusion;
+						$timeout(function() {
+							$window.location.reload();
+						}, c.data.refreshInterval * 1000);            
+					}
+					else if (assessData.redirect_url &amp;&amp; assessData.redirect_url.length &gt; 0)
+						$window.location.href = assessData.redirect_url;
+					else {
+						c.data.kioskSubmitMsg = assessData.is_kiosk_survey &amp;&amp; !$scope.isMobile ? assessData.conclusion : '';
+						c.data.successMessage = assessData.conclusion;
+					}
+					break;
+				case 'save':
+					c.data.successMessage = assessData.parameterizedMsgsMap.saved_msg;
+					break;
+				case 'cancel':
+					c.data.successMessage = assessData.parameterizedMsgsMap.not_saved_msg;
+					break;
+			}
+			postIframeMessage(actionName);
+			if (actionName != 'next') {
+				c.showSurveyForm = false;
+				updatePageTitle('', true);
+				removeCabrilloButtons();
+			}
+		});
+		$scope.$on('assessment.form.submit_failed', function(data, action){
+			c.errorMessage = assessData.parameterizedMsgsMap.form_submit_failed_msg;
+			c.invalidSurvey = true;
+			removeCabrilloButtons();
+		});
+	
+	$timeout(function() {
+		if (!assessData.not_show_intro_note)
+			$("#get-started").focus();
+		var breadcrumbs = [];
+		breadcrumbs.push({label: c.data.mySurveysMsg, url: '?id=my_surveys'});
+		if (assessData.title)
+			breadcrumbs.push({label: assessData.title, url: '#'});
+		$scope.$emit('sp.update.breadcrumbs', breadcrumbs);
+	});
+	
+	if (!assessData._fields || assessData._fields === 'null' || assessData._fields === 'undefined' || Object.keys(assessData._fields).length === 0) {
+		c.errorMessage = c.data.invalidRecordMsg;
+		c.data.recordNotFound = true;
+		c.invalidSurvey = true;
+		$timeout(function() { postIframeMessage('assessment_form_loaded') });
+		return;
+	}
+
+	if (!assessData.readonly_form) {
+		switch(assessData.state) {
+			case 'complete':
+				if (!assessData.can_retake) {
+					c.errorMessage = assessData.parameterizedMsgsMap.already_completed;
+					c.invalidSurvey = true;
+					return;
+				}
+				break;
+			case 'canceled':
+				c.errorMessage = assessData.parameterizedMsgsMap.cancel_msg;
+				c.invalidSurvey = true;
+				return;
+		}
+	}
+	else {
+		$timeout(function() {
+			spAriaUtil.sendLiveMessage(c.data.readOnlyViewMsg);
+		}, 100);
+	}
+	
+	c.trustHTML = function(string) {
+		return $sce.trustAsHtml(string);
+	};
+  
+	c.startSurvey = function() {
+		c.showSurveyForm = true;
+		c.showIntro = false;
+		$scope.$emit('sp.components.resize');
+		$scope.$emit('sp.assessment.form.visible');
+		$scope.$broadcast('sp.assessment.details.visible');
+		updatePageTitle(assessData.categories[0].name, false);
+	}
+	
+	c.closeSurvey = function() {
+		iframePayload.action = 'close';
+		$window.postMessage(iframePayload, window.location.origin);
+	};
+  
+	if (assessData.one_click_survey == true || assessData.not_show_intro_note || assessData.readonly_form) {
+		c.startSurvey();
+	}
+
+	c.isXSScreenSize = function() {
+		return c.isNative || $window.matchMedia('(max-width: 767px)').matches;
+	}
+
+	$scope.isMobile = c.isXSScreenSize() &amp;&amp; !assessData.enforce_none;
+	angular.element($window).on('resize', function() {
+		$scope.isMobile = c.isXSScreenSize() &amp;&amp; !assessData.enforce_none;
+		// Manually calling $apply is required because resize event is outside of angular
+		$scope.$apply();
+	});
+
+	function updatePageTitle(categoryName, changeToSubmitTitle) {
+		if (c.isNative) {
+			cabrillo.viewLayout.setTitle(assessData.title);
+			return;
+		}
+		if ((!$scope.isMobile &amp;&amp; assessData.pagination == 'none') || !c.showSurveyForm)
+			$document[0].title = c.title;
+		else if (changeToSubmitTitle)
+			$document[0].title = 'Submit ' + assessData.evaluation_method + ' - ' + c.title;
+		else
+			$document[0].title = categoryName + ' - ' + c.title;
+	}
+
+	$rootScope.$on("survey.update.title", function(e, x, y){updatePageTitle(x, y);});
+	
+	function displayNativeButtons() {
+		if (!c.isNative)
+			return;
+		var buttons = [];
+		if (!c.showSurveyForm) {
+			buttons.push({
+				title: c.data.getStartedMsg,
+				backgroundColor: assessData.sys_properties.mobileNativeColor,
+				textColor: '#FFFFFF'
+			});
+			cabrillo.viewLayout.setBottomButtons(buttons, function(index) {
+					c.startSurvey();
+			});
+		}
+	}
+	
+	function removeCabrilloButtons() {
+		if (c.isNative) {
+			cabrillo.viewLayout.setBottomButtons(); // remove cabrillo buttons
+		}
+	}
+	var g_form;
+	$scope.$on('spModel.gForm.initialized', function(e, gFormInstance) {
+			g_form = gFormInstance;
+			displayNativeButtons();
+			postIframeMessage('assessment_form_loaded');
+	});
+	c.redirect = function(target) {
+		window.location = target;
+	};
+	c.setLanguage = function() {
+		// Setup session langugae for current user
+		$scope.c.data.pickedLanguageId = $scope.c.data.pickedLanguage;
+		var surveyInstanceId = assessData.instance_id;
+		var surveyUrl = new URL($window.location.href);
+		if (!surveyUrl.searchParams.has("sysparm_lang") &amp;&amp; surveyInstanceId)
+			surveyUrl.searchParams.set("instance_id", surveyInstanceId);
+		surveyUrl.searchParams.set("sysparm_lang", $scope.c.data.pickedLanguageId)
+		$window.location.href = surveyUrl.toString();
+	};
+	$window.onpageshow = function(){
+		if(c.isNative)
+			$scope.$emit('sp.assessment.form.visible');
+		  updatePageTitle(assessData.categories[0].name, false);
+	};
+	
+	//sends formload event to siesmic component
+	function postIframeMessage(action) {
+		iframePayload.action = action;
+		$window.postMessage(iframePayload, window.location.origin);
+	}
+	
+	// The picked language equals to either session language or the language picked in previous time
+	if ($scope.c.data.assessment.languages) {
+		if (!$scope.c.data.pickedLanguageId){
+			for (var i = 0; i &lt; $scope.c.data.assessment.languages.length; i ++) {
+				if ($scope.c.data.assessment.languages[i].value == $scope.c.data.sessionLanguage) {
+					$scope.c.data.pickedLanguage = $scope.c.data.assessment.languages[i].value;
+					break;
+				}
+			}
+		} else {
+			for (var i = 0; i &lt; $scope.c.data.assessment.languages.length; i ++) {
+				if ($scope.c.data.assessment.languages[i].value == $scope.c.data.pickedLanguageId) {
+					$scope.c.data.pickedLanguage = $scope.c.data.assessment.languages[i].value;
+					break;
+				}
+			}
+		}
+	}
+}]]&gt;&lt;/client_script&gt;&lt;controller_as&gt;c&lt;/controller_as&gt;&lt;css&gt;@media only screen and (min-width : 768px) {
+  .survey-modal-body {
+	 	width : 80%;
+  	margin : auto;
+	}
+  .survey-intro-block {
+  	box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+ 		margin-top: 2rem
+	}
+}
+
+.sps-panel-spacer{
+  margin : 24px;
+}
+
+.intro-text .outer-circle, .survey-heading {
+	background: $primary;
+}
+
+.intro-text .outer-circle {
+	padding: 15px 27px 27px 23px;
+	display:inline-block;
+	border-radius:100%;
+}
+
+.intro-text .survey-icon {
+  font-size:4em;
+}
+
+div.introduction-container img, div.end-note img{
+  max-width: 100%;
+  height: auto;
+}
+
+.single_question_survey_image {
+	display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+}
+
+.asmt-lang-picker {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.asmt-img-scale {
+		border: 1px solid transparent;
+}
+
+/* handling for high contrast mood */ 
+.asmt-img-scale:focus {
+	outline: 4px solid transparent !important;
+}
+
+.disabled-view {
+  background-color: $gray-lighter;
+  color: $text-color;
+}&lt;/css&gt;&lt;data_table&gt;sp_instance&lt;/data_table&gt;&lt;demo_data/&gt;&lt;description/&gt;&lt;docs/&gt;&lt;field_list/&gt;&lt;has_preview&gt;false&lt;/has_preview&gt;&lt;id&gt;take_assessment&lt;/id&gt;&lt;internal&gt;false&lt;/internal&gt;&lt;link&gt;&lt;![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]&gt;&lt;/link&gt;&lt;name&gt;Surveys and Assessments&lt;/name&gt;&lt;option_schema/&gt;&lt;public&gt;true&lt;/public&gt;&lt;roles/&gt;&lt;script&gt;&lt;![CDATA[(function() {
+	var page_id = options.id || $sp.getParameter('id')  || "";
+	var typeId = options.type_id || $sp.getParameter('type_id') || "";
+	var instanceId = options.instance_id || $sp.getParameter('instance_id') || "";
+	var triggerId = $sp.getParameter('sysparm_trigger_id') || "";
+	var triggerTable = $sp.getParameter('sysparm_trigger_table') || "";
+	var kiosk = $sp.getParameter('sysparm_kiosk') || false;
+	var pickedLanguageId = $sp.getParameter('sysparm_lang') || "";
+	var readOnlyForm = $sp.getParameter('readonly') == 'true';
+	if (shouldRedirect(instanceId, typeId)) {
+		redirectToOldWidget();
+	} else {
+		data.embeddedWidget = '';
+	}
+	if (input) {
+		if (input.action == "check_string_validation") {
+			data.stringValidationResponse = new global.SurveyUtilAjax().validateMultipleStringFields(input.string_qa_map);
+		}
+	
+		if (input.action == "log_assessment") {
+			var logMessage = input.assessmentDetails.type + " V2" + " : " + input.assessmentDetails.action_name;
+			$sp.logStat(logMessage, input.assessmentDetails.table, input.assessmentDetails.id, input.assessmentDetails.name, $sp.getPortalRecord().getUniqueValue());
+		}
+		return;
+	}
+	
+	if (kiosk &amp;&amp; !(triggerTable &amp;&amp; triggerId)) {
+		gs.addErrorMessage(gs.getMessage("Something is not working. Please try again later."));
+		return false;
+	}
+	var refreshInterval = options.refresh_interval || $sp.getParameter('sysparm_refresh_interval');
+	if (refreshInterval &amp;&amp; typeId) {
+		refreshInterval = parseInt(refreshInterval, 10);
+		if (!isNaN(refreshInterval))
+			data.refreshInterval = refreshInterval;
+	}
+	data.pickedLanguageId = pickedLanguageId;
+	data.show_language_picker = false;
+	data.trigger_table = triggerTable;
+	data.trigger_id = triggerId;
+	data.show_close = (options.is_workspace == 'true');
+	var showLangProperty = gs.getProperty("show_lang_picker_for_publicsurveys");
+	if (page_id == 'public_assessment' || page_id == 'public_survey') {
+		if (!!typeId &amp;&amp; isSurveyPublic(typeId) &amp;&amp; showLangProperty == "true" &amp;&amp; !gs.isLoggedIn()) {
+			// If it is a public survey and user is not logged in and show language picker property is marked
+			// Check if picked language equals to session language
+			// If not same, change session language
+			data.show_language_picker = true;
+			var session = gs.getSession();
+			var sessionLang = session.getLanguage();
+			if (data.pickedLanguageId &amp;&amp; sessionLang !== data.pickedLanguageId) {
+				var amtUtil = new global.AssessmentUtils();
+				var isSuccess = amtUtil.setSessionLanguage(data.pickedLanguageId);
+				if (!isSuccess) {
+					gs.addErrorMessage(gs.getMessage("This language doesn't exist."));
+					return false;
+				}
+				// After changing session language, we need to refresh page again to see the system has been entriely translated.
+				data.redirectTarget = "?id=public_assessment&amp;type_id=" + typeId + "&amp;sysparm_lang=" + data.pickedLanguageId + (instanceId ? "&amp;instance_id="+ instanceId : "");
+			}
+			else
+				data.sessionLanguage = sessionLang;
+		} else {
+			if (!!typeId &amp;&amp; (!isSurveyPublic(typeId) || gs.isLoggedIn())) {
+				var sysParam = "";
+				sysParam += triggerTable ? "&amp;sysparm_trigger_table=" + triggerTable : "";
+				sysParam += triggerId ? "&amp;sysparm_trigger_id=" + triggerId: "";
+				data.redirectTarget = "?id=take_assessment&amp;type_id=" + typeId + sysParam;
+			}
+			else if (!!instanceId &amp;&amp; (!isSurveyInstancePublic(instanceId) || gs.isLoggedIn()))
+				data.redirectTarget = "?id=take_assessment&amp;instance_id=" + instanceId;
+		}
+	}
+	try {
+		data.assessment = $sp.getAssessmentRecord(instanceId, typeId, data);
+	}
+	catch (e) {
+		gs.error(e);
+		redirectToOldWidget();
+		return;
+	}
+	data.assessment.is_page_public = page_id === 'public_survey' ||  page_id === 'public_assessment';
+	data.assessment.actions_footer = $sp.getParameter('actions_footer') == 'true';
+	data.assessment.enforce_none = ($sp.getParameter('pagination') == 'none');
+	var actions = $sp.getParameter('hide_actions') || "";
+	actions = decodeURIComponent(actions);
+	if (actions.length != 0) {
+		actionTypes = actions.split(',');
+		if (actionTypes.indexOf('cancel') != -1) data.assessment.hide_cancel = true;
+		if (actionTypes.indexOf('save') != -1) data.assessment.hide_save = true;
+	}	
+	
+	if (readOnlyForm) {
+		data.assessment.readonly_form = readOnlyForm;
+		for (var field in data.assessment._fields) {
+			var _field = data.assessment._fields[field];
+			_field.sys_readonly = true;
+			if (_field.type == 'attachment') {
+				var surveyUtil = new global.SurveyCoreUtils();
+				_field.recordTableName = surveyUtil.getAttachmentTable(_field.sys_id).name;
+				_field.recordSysId = (data.assessment.state == 'complete' ? surveyUtil.getMetricResultId(data.assessment.instance_id, _field.sys_id) : _field.sys_id);
+			}
+		}
+		data.assessment.pagination = 'none';
+		data.assessment.show_progress_bar = false;
+		var asmtSignature = data.assessment.signature;
+		if (asmtSignature) {
+			asmtSignature.sys_readonly = true;
+			asmtSignature.value = (asmtSignature.type == 'checkbox' &amp;&amp; asmtSignature.signature_result == 'checked') ? true : asmtSignature.value;
+		}
+	}
+	data.show_language_picker = data.show_language_picker &amp;&amp; data.assessment.show_language_picker;
+	var evaluationMethodDisplay = data.assessment.evaluation_method_display;
+	if (evaluationMethodDisplay)
+		evaluationMethodDisplay = evaluationMethodDisplay.toLowerCase();
+	var msgParamArray = [evaluationMethodDisplay, data.assessment.instance_duedate];
+	data.assessment.parameterizedMsgsMap = {
+		"not_saved_msg": gs.getMessage("You have canceled the {0}. You can complete this {0} before {1}.", msgParamArray),
+		"already_completed": gs.getMessage("You have already submitted this {0}.", evaluationMethodDisplay),
+		"cancel_msg": gs.getMessage("This {0} has been canceled", evaluationMethodDisplay),
+		"submitted_msg": gs.getMessage("Your response has been submitted. Thank you for taking this {0}!", evaluationMethodDisplay),
+		"saved_msg": gs.getMessage('Your response has been saved. You can complete this {0} before {1}.', msgParamArray),
+		"form_submit_failed_msg": gs.getMessage("Something is not working. Please try again later."),
+		"cancel_modal_msg": gs.getMessage("Are you sure you want to cancel the {0}? This might not save your response.", evaluationMethodDisplay),
+		"cancel_header": gs.getMessage("Cancel {0}", evaluationMethodDisplay),
+		"close_btn_msg": gs.getMessage("Close {0}", evaluationMethodDisplay)
+	};
+	if (data.assessment.signature) {
+		data.assessment.signature.msgs = {
+			username: gs.getMessage("Username"),
+			password: gs.getMessage("Password"),
+			signatureAuthentication: gs.getMessage("Signature Authentication"),
+			invalidCredentials: gs.getMessage("Please use correct password."),
+			emptySignatureMessage: gs.getMessage("You must complete the required signature")
+		};
+	}
+	if (data.assessment.enforce_none)
+		data.assessment.pagination = 'none';
+	data.mySurveysMsg = gs.getMessage("My Surveys");
+	data.invalidRecordMsg =  gs.getMessage("You are not authorized or the record is not valid.");
+	data.getStartedMsg = gs.getMessage("Get Started");
+	data.readOnlyViewMsg = gs.getMessage("This is a read-only view");
+	data.assessment.sys_properties = {
+		mobileNativeColor: gs.getProperty("sn_me_survey.mobile.primary_color", "#1f8476")
+	};
+	
+	function isSurveyPublic(typeId) {
+		var metricType = new GlideRecord('asmt_metric_type');
+		if (metricType.get(typeId))
+			return metricType.allow_public;
+		return false;
+	}
+	
+	function redirectToOldWidget() {
+		data.isRedirect = true;
+		data.embeddedWidget = $sp.getWidget("take-survey", {
+			type_id: typeId,
+			instance_id: instanceId
+		});
+	}
+	
+	function isSurveyInstancePublic(instanceId) {
+		var surveyInstance = new GlideRecord('asmt_assessment_instance');
+		if (surveyInstance.get(instanceId))
+			return isSurveyPublic(surveyInstance.getValue('metric_type'));
+		return false;
+	}
+	
+	function shouldRedirect(instanceId, typeId) {
+		if (instanceId) {
+			var instance = new GlideRecord('asmt_assessment_instance');
+			return instance.get(instanceId) ? instance.metric_type.evaluation_method != 'survey' &amp;&amp; instance.metric_type.evaluation_method != 'assessment' : false;
+		} else if (typeId) {
+			var metricType = new GlideRecord('asmt_metric_type');
+			return metricType.get(typeId) ? metricType.evaluation_method != 'survey' &amp;&amp; metricType.evaluation_method != 'assessment' : false;
+		}	
+		return false;
+	}
+})();]]&gt;&lt;/script&gt;&lt;servicenow&gt;true&lt;/servicenow&gt;&lt;sys_class_name&gt;sp_widget&lt;/sys_class_name&gt;&lt;sys_created_by&gt;admin&lt;/sys_created_by&gt;&lt;sys_created_on&gt;2021-08-02 08:50:56&lt;/sys_created_on&gt;&lt;sys_id&gt;5cbb8f1053313010561cddeeff7b1272&lt;/sys_id&gt;&lt;sys_mod_count&gt;269&lt;/sys_mod_count&gt;&lt;sys_name&gt;Surveys and Assessments&lt;/sys_name&gt;&lt;sys_package display_value="Service Portal Surveys" source="sn_portal_surveys"&gt;67ac5062db10220035417878f0b8f5c4&lt;/sys_package&gt;&lt;sys_policy/&gt;&lt;sys_scope display_value="Service Portal Surveys"&gt;67ac5062db10220035417878f0b8f5c4&lt;/sys_scope&gt;&lt;sys_update_name&gt;sp_widget_5cbb8f1053313010561cddeeff7b1272&lt;/sys_update_name&gt;&lt;sys_updated_by&gt;admin&lt;/sys_updated_by&gt;&lt;sys_updated_on&gt;2022-05-12 12:55:59&lt;/sys_updated_on&gt;&lt;template&gt;&lt;![CDATA[&lt;!-- redirect to old widget if eval method is not survey --&gt;
+&lt;sp-widget widget="c.data.embeddedWidget" ng-if="!!c.data.embeddedWidget"&gt;&lt;/sp-widget&gt;
+&lt;div ng-if="!c.data.embeddedWidget"&gt;
+  &lt;!-- Spacing from top; --&gt;
+  &lt;script language="javascript" ng-if="data.redirectTarget" ng-init="c.redirect(data.redirectTarget)"&gt;&lt;/script&gt;
+  &lt;div class="sps-panel-spacer hidden-xs" /&gt;
+  &lt;!-- Show error messages --&gt;
+  &lt;div class="row" ng-if="!!c.errorMessage"&gt;
+    &lt;div class="col-md-10 col-md-offset-1 col-sm-12"&gt;
+      &lt;div role="alert" class="alert"  ng-if="!!c.errorMessage" ng-class="data.recordNotFound ? 'alert-info' : 'alert-danger'"&gt;{{::c.errorMessage}}&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div ng-if="!data.redirectTarget &amp;&amp; !c.invalidSurvey"&gt;
+    &lt;div class="survey-modal-body"&gt;
+      &lt;div ng-if="data.assessment.readonly_form" class="alert alert-info"&gt;
+        {{data.readOnlyViewMsg}}
+      &lt;/div&gt;
+      &lt;div ng-if="data.kioskSubmitMsg" class="hidden-xs"&gt;
+    		&lt;div role="alert" class="alert alert-success"  ng-bind-html="c.trustHTML(data.kioskSubmitMsg)"&gt;&lt;/div&gt;
+    	&lt;/div&gt;
+      &lt;!-- Survey Intro page --&gt;
+      &lt;div class="survey-intro-block m-b-xl" ng-show="c.showIntro" ng-class="{'panel panel-default' : isMobile}"&gt;
+        &lt;div id="lang_picker" ng-if="data.show_language_picker == true &amp;&amp; data.assessment.one_click_survey == false" class="asmt-lang-picker m-r padder-t"&gt;
+                        &lt;label for="spLanguagePicker" class="m-r-xs"&gt;${Language}: &lt;/label&gt;
+                        &lt;select ng-model="data.pickedLanguage" name="spLanguagePicker" id="spLanguagePicker" ng-change="c.setLanguage()" class="sn-select-basic"&gt;
+                          &lt;option ng-repeat="lang in data.assessment.languages" value={{::lang.value}}&gt;{{::lang.label}}&lt;/option&gt;
+                        &lt;/select&gt;
+        &lt;/div&gt;
+        &lt;div class="wrapper-md text-center intro-text"&gt;
+          &lt;div class="wrapper-sm"&gt;
+            &lt;div class="outer-circle"&gt;
+              &lt;span ng-if="(data.assessment.evaluation_method == 'survey')" class="survey-icon glyphicon icon-form bg-primary"&gt;&lt;/span&gt;
+              &lt;span class="survey-icon glyphicon icon-article-document bg-primary" ng-if="(data.assessment.evaluation_method == 'assessment')"&gt;&lt;/span&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class="wrapper-sm"&gt;
+            &lt;div class="title-label h3"&gt;{{::data.assessment.title}}&lt;/div&gt;
+            &lt;div ng-if="data.assessment.trigger_id" style="font-size:15px;"&gt;
+                        {{::data.assessment.evaluation_method_display}} ${is in reference to} 
+              &lt;span ng-if="::!c.isNative"&gt;
+              	&lt;a href="?id=ticket&amp;table={{::data.assessment.trigger_table}}&amp;sys_id={{::data.assessment.trigger_id}}"&gt;{{::data.assessment.trigger_display}}&lt;/a&gt;
+              &lt;/span&gt;
+               &lt;span ng-if="::c.isNative"&gt;
+              	{{::data.assessment.trigger_display}}
+              &lt;/span&gt;  
+			&lt;/div&gt;
+			&lt;div ng-if="data.assessment.trigger_desc" style="font-size:15px;"&gt;
+						{{::data.assessment.trigger_desc}}
+			&lt;/div&gt;
+            &lt;div class="introduction-container" ng-if="data.assessment.introduction"&gt;
+              &lt;div ng-bind-html="c.trustHTML(data.assessment.introduction)"&gt;&lt;/div&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class="row" ng-if="::!c.isNative"&gt;
+            &lt;div class="col-xs-12 col-sm-6 col-sm-offset-3"&gt;
+              &lt;div class="wrapper-lg"&gt;
+                &lt;button class="btn btn-primary btn-block btn-lg" ng-click="c.startSurvey()" id="get-started"&gt;${Get Started}&lt;/button&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;sp-assessment-model form-model="c.data.assessment" is-mobile="isMobile" ng-show="c.showSurveyForm || (!isMobile &amp;&amp; data.assessment.is_kiosk_survey)"&gt;&lt;/sp-assessment-model&gt;
+      &lt;div class="wrapper-md survey-intro-block m-b-xl" ng-class="{'panel panel-default' : isMobile}" ng-if="data.successMessage &amp;&amp; data.successMessage.length &amp;&amp; (!data.assessment.is_kiosk_survey || isMobile)"&gt;
+        &lt;div class="text-center intro-text"&gt;
+          &lt;div class="wrapper-sm"&gt;
+            &lt;div class="outer-circle"&gt;
+              &lt;span ng-if="(data.assessment.evaluation_method == 'survey' || data.assessment.evaluation_method == 'assessment')" class="survey-icon glyphicon icon-form bg-primary"&gt;&lt;/span&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class="wrapper-sm text-center end-note"&gt;
+          &lt;h4 role="alert" class="description-text" ng-bind-html="c.trustHTML(data.successMessage)"&gt;&lt;/h4&gt;
+          &lt;div class="row" ng-if="data.show_close"&gt;
+            &lt;div class="col-xs-12 col-sm-6 col-sm-offset-3"&gt;
+              &lt;div class="wrapper-lg"&gt;
+                &lt;button class="btn btn-default" ng-click="c.closeSurvey()"&gt;{{data.assessment.parameterizedMsgsMap.close_btn_msg}}&lt;/button&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;]]&gt;&lt;/template&gt;&lt;/sp_widget&gt;</payload>
+        <sys_class_name>sp_rel_widget_clone</sys_class_name>
+        <sys_created_by>hyc</sys_created_by>
+        <sys_created_on>2023-02-09 21:42:50</sys_created_on>
+        <sys_id>767091af2fbc691076befe7cf699b62e</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>36705d6f2fbc691076befe7cf699b680</sys_name>
+        <sys_package display_value="ABB Risk" source="x_708286_abb_risk">8e2eb2972f34691076befe7cf699b605</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="ABB Risk">8e2eb2972f34691076befe7cf699b605</sys_scope>
+        <sys_update_name>sp_rel_widget_clone_767091af2fbc691076befe7cf699b62e</sys_update_name>
+        <sys_updated_by>hyc</sys_updated_by>
+        <sys_updated_on>2023-02-09 21:42:50</sys_updated_on>
+    </sp_rel_widget_clone>
+</record_update>

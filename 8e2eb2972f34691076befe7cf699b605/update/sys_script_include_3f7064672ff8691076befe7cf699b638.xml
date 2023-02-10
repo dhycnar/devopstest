@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_708286_abb_risk.ABBUtils</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <name>ABBUtils</name>
+        <script><![CDATA[var ABBUtils = Class.create();
+ABBUtils.prototype = {
+    initialize: function(caseId) {
+        this.caseID = caseId;
+    },
+
+    assessmentSummary: function() {
+        var surveySummary = "";
+        var mas = new GlideRecord('asmt_metric_result');
+        mas.addQuery('instance', this._getAssessmentInstance());
+        mas.orderBy('metric');
+        mas.query();
+        while (mas.next()) {
+			if(this._getMetricType == "choice"){
+				if(mas.value == "1") 
+					surveySummary = surveySummary + this._getMetricQuestion(mas.metric) + " - Yes";
+				if(mas.value == "2")
+					surveySummary = surveySummary + this._getMetricQuestion(mas.metric) + " - No";
+			}else{
+            surveySummary = surveySummary + this._getMetricQuestion(mas.metric);
+            surveySummary = surveySummary + '   - ' + mas.string_value + '\n\n';
+			}
+        }
+
+        this._updateTaskSummary(surveySummary);
+    },
+	
+	questionUpdates: function(){
+		
+	},
+
+    _getAssessmentInstance: function() {
+        var gai = new GlideRecord('asmt_assessment_instance');
+        gai.addQuery('task_id', this.caseID);
+        gai.query();
+        if (gai.next()) {
+            return gai.getUniqueValue();
+        }
+    },
+
+    _getMetricQuestion: function(metricID) {
+        var question;
+        var gmq = new GlideRecord('asmt_metric');
+        gmq.get(metricID);
+        question = gmq.question + "\n" + gmq.description;
+        return question;
+    },
+	_getMetricType: function(metricID) {
+        var gmq = new GlideRecord('asmt_metric');
+        gmq.get(metricID);
+        return gmq.datatype;
+    },
+	
+	_updateTaskSummary: function(surveySummary) {
+        var updateTask = new GlideRecord('x_708286_abb_risk_risk');
+        updateTask.get(this.caseID);
+        updateTask.summary = surveySummary;
+        updateTask.update();
+    },
+
+    type: 'ABBUtils'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>hyc</sys_created_by>
+        <sys_created_on>2023-02-09 18:13:24</sys_created_on>
+        <sys_id>3f7064672ff8691076befe7cf699b638</sys_id>
+        <sys_mod_count>6</sys_mod_count>
+        <sys_name>ABBUtils</sys_name>
+        <sys_package display_value="ABB Risk" source="x_708286_abb_risk">8e2eb2972f34691076befe7cf699b605</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="ABB Risk">8e2eb2972f34691076befe7cf699b605</sys_scope>
+        <sys_update_name>sys_script_include_3f7064672ff8691076befe7cf699b638</sys_update_name>
+        <sys_updated_by>hyc</sys_updated_by>
+        <sys_updated_on>2023-02-09 20:12:38</sys_updated_on>
+    </sys_script_include>
+</record_update>

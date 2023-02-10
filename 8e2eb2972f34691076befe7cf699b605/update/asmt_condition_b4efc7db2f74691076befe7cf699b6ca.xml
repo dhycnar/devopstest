@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="asmt_condition">
+    <asmt_condition action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <assessment display_value="ABB Survey X">4e6f071b2f74691076befe7cf699b60c</assessment>
+        <assessment_record/>
+        <assessment_record_field/>
+        <business_rule display_value="Auto assessment business rule">ce109f9b2f74691076befe7cf699b6f4</business_rule>
+        <condition table="x_708286_abb_risk_risk">stateCHANGESTO11^risk_type=x^EQ<item display_value="Assessment" endquery="false" field="state" goto="false" newquery="false" operator="CHANGESTO" or="false" value="11"/>
+            <item display_value="Type X" endquery="false" field="risk_type" goto="false" newquery="false" operator="=" or="false" value="x"/>
+            <item endquery="true" field="" goto="false" newquery="false" operator="=" or="false" value=""/>
+        </condition>
+        <description/>
+        <duration/>
+        <percent_random>100</percent_random>
+        <related_field_1/>
+        <related_field_2/>
+        <related_field_3/>
+        <related_field_4/>
+        <sys_class_name>asmt_condition</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2023-02-09 12:21:54</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>b4efc7db2f74691076befe7cf699b6ca</sys_id>
+        <sys_mod_count>3</sys_mod_count>
+        <sys_name/>
+        <sys_overrides/>
+        <sys_package display_value="ABB Risk" source="x_708286_abb_risk">8e2eb2972f34691076befe7cf699b605</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="ABB Risk">8e2eb2972f34691076befe7cf699b605</sys_scope>
+        <sys_update_name>asmt_condition_b4efc7db2f74691076befe7cf699b6ca</sys_update_name>
+        <sys_updated_by>hyc</sys_updated_by>
+        <sys_updated_on>2023-02-09 12:54:56</sys_updated_on>
+        <table>x_708286_abb_risk_risk</table>
+        <trigger_random>false</trigger_random>
+        <user_field>assigned_to</user_field>
+    </asmt_condition>
+</record_update>
