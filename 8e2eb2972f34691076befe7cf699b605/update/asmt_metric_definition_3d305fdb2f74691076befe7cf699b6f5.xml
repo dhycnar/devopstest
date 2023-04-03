@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="asmt_metric_definition">
     <asmt_metric_definition action="INSERT_OR_UPDATE">
         <display>No</display>
-        <metric display_value="q3">ed305fdb2f74691076befe7cf699b6f0</metric>
+        <metric display_value="yq3">ed305fdb2f74691076befe7cf699b6f0</metric>
         <normalization_input>0</normalization_input>
         <order>1</order>
         <selected_image/>

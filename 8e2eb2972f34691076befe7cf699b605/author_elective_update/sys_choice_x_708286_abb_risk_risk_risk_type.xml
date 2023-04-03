@@ -6,7 +6,6 @@
             <sys_class_name>sys_choice_set</sys_class_name>
             <sys_created_by>admin</sys_created_by>
             <sys_created_on>2023-02-09 11:37:38</sys_created_on>
-            <sys_id>21f5439f2f34691076befe7cf699b665</sys_id>
             <sys_mod_count>0</sys_mod_count>
             <sys_name>risk_type</sys_name>
             <sys_package display_value="ABB Risk" source="x_708286_abb_risk">8e2eb2972f34691076befe7cf699b605</sys_package>
@@ -30,7 +29,6 @@
             <sys_created_on>2023-02-09 11:37:38</sys_created_on>
             <sys_domain>global</sys_domain>
             <sys_domain_path>/</sys_domain_path>
-            <sys_id>06e5439f2f34691076befe7cf699b6c4</sys_id>
             <sys_mod_count>2</sys_mod_count>
             <sys_updated_by>admin</sys_updated_by>
             <sys_updated_on>2023-02-09 11:37:49</sys_updated_on>
@@ -50,7 +48,6 @@
             <sys_created_on>2023-02-09 11:37:44</sys_created_on>
             <sys_domain>global</sys_domain>
             <sys_domain_path>/</sys_domain_path>
-            <sys_id>bdf5439f2f34691076befe7cf699b61b</sys_id>
             <sys_mod_count>2</sys_mod_count>
             <sys_updated_by>admin</sys_updated_by>
             <sys_updated_on>2023-02-09 11:37:52</sys_updated_on>

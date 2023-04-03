@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sp_rel_widget_clone">
     <sp_rel_widget_clone action="INSERT_OR_UPDATE">
-        <child display_value="Copy of Surveys and Assessments">36705d6f2fbc691076befe7cf699b680</child>
+        <child display_value="ABB Surveys and Assessments">36705d6f2fbc691076befe7cf699b680</child>
         <cloned>2023-02-09 21:42:50</cloned>
         <last_validated>2023-02-09 21:42:50</last_validated>
         <parent display_value="Surveys and Assessments">5cbb8f1053313010561cddeeff7b1272</parent>
