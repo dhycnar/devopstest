@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element audit="true" db_object_id="1d828f9b2f34691076befe7cf699b649" extends="task" label="risk" max_length="40" name="x_708286_abb_risk_risk" type="collection">
+        <element attributes="encode_utf8=false" label="Assessment" max_length="32" name="assessment" reference="asmt_assessment_instance" type="reference"/>
+        <element attributes="encode_utf8=false" label="Assessment Review" max_length="32" name="assessment_review" reference="asmt_assessment_instance" type="reference"/>
+        <element attributes="encode_utf8=false" label="Risk Owner" mandatory="true" max_length="32" name="risk_owner" reference="sys_user" type="reference"/>
+        <element attributes="edge_encryption_enabled=true" choice="1" label="Risk Type" mandatory="true" max_length="40" name="risk_type" type="string">
+            <choice>
+                <element inactive_on_update="false" label="Type X" sequence="1" value="x"/>
+                <element inactive_on_update="false" label="Type Y" sequence="2" value="y"/>
+            </choice>
+        </element>
+        <element attributes="edge_encryption_enabled=true" label="Assessment Summary" max_length="100000" name="summary" type="string"/>
+    </element>
+</database>

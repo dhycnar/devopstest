@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_security_acl_role">
+    <sys_security_acl_role action="INSERT_OR_UPDATE">
+        <sys_class_name>sys_security_acl_role</sys_class_name>
+        <sys_created_by>hyc</sys_created_by>
+        <sys_created_on>2023-02-09 13:45:55</sys_created_on>
+        <sys_id>b0536b932ff4691076befe7cf699b60d</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>ABBAjax.x_708286_abb_risk.user</sys_name>
+        <sys_package display_value="ABB Risk" source="x_708286_abb_risk">8e2eb2972f34691076befe7cf699b605</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="ABB Risk">8e2eb2972f34691076befe7cf699b605</sys_scope>
+        <sys_security_acl display_value="ABBAjax">645327932ff4691076befe7cf699b66c</sys_security_acl>
+        <sys_update_name>sys_security_acl_role_b0536b932ff4691076befe7cf699b60d</sys_update_name>
+        <sys_updated_by>hyc</sys_updated_by>
+        <sys_updated_on>2023-02-09 13:45:55</sys_updated_on>
+        <sys_user_role display_value="x_708286_abb_risk.user" name="x_708286_abb_risk.user">562eb2972f34691076befe7cf699b60f</sys_user_role>
+        <transaction_id/>
+    </sys_security_acl_role>
+</record_update>
